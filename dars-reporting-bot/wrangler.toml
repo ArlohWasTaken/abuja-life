@@ -14,7 +14,7 @@ AI_MODEL = "@cf/meta/llama-3.1-8b-instruct"
 [[d1_databases]]
 binding = "DB"
 database_name = "dars-db"
-database_id = "local-dars-db-placeholder"
+database_id = "f24ca3e1-fc34-48b9-8279-5bfdbbb4a98a"
 
 [ai]
 binding = "AI"
