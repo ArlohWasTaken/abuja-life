@@ -118,7 +118,7 @@ describe('telegram bot', () => {
       expect.stringContaining('/sendMessage'),
       expect.objectContaining({
         method: 'POST',
-        body: expect.stringContaining('DARS Notes Bot'),
+        body: expect.stringContaining('DARS Bi-Weekly Notes Bot'),
       })
     );
   });

@@ -1,6 +1,6 @@
 import type { Env, TelegramUpdate } from '../types';
 import { saveNote, getUnsubmittedNotes } from '../db/queries';
-import { getCurrentWeekWindowWAT, formatWATDateTime } from '../utils/time';
+import { getReportingWindowWAT, formatWATDateTime } from '../utils/time';
 
 /**
  * Sends a text message to a Telegram chat.
@@ -60,7 +60,6 @@ export async function handleTelegramWebhook(
   const message = update?.message;
 
   if (!message || !message.from || !message.chat) {
-    // Return 200 so Telegram acknowledges non-message updates (reactions, edits, etc.)
     return new Response('OK', { status: 200 });
   }
 
@@ -82,21 +81,21 @@ export async function handleTelegramWebhook(
 
   // Command: /start
   if (text.startsWith('/start')) {
-    const welcome = `👋 <b>DARS Notes Bot</b>\n\nSend casual text messages anytime during the week describing what you or the team worked on.\n\nEvery Friday at <b>4:00 PM WAT</b>, I will automatically synthesize your notes and submit the bi-weekly report to DARS before the 6:00 PM deadline!\n\n<b>Commands:</b>\n/preview — View this week's unsubmitted notes\n/status — Check bot status & upcoming deadline\n/file_now — Trigger report generation and DARS submission immediately`;
+    const welcome = `👋 <b>DARS Bi-Weekly Notes Bot</b>\n\nSend casual text messages anytime describing what you or the team worked on.\n\n<b>How the Bi-Weekly Schedule Works:</b>\n• <b>Week 1 Friday (4 PM WAT):</b> Progress check-in reminder.\n• <b>Week 2 Friday (4 PM WAT):</b> Automatic AI compilation & DARS submission before the 6:00 PM deadline!\n\n<b>Commands:</b>\n/preview — View unsubmitted notes for this period\n/status — Check bot status & cycle details\n/file_now — Force immediate synthesis and DARS submission`;
     await sendTelegramMessage(botToken, chatId, welcome, 'HTML');
     return new Response('OK', { status: 200 });
   }
 
   // Command: /preview
   if (text.startsWith('/preview')) {
-    const { startISO, endISO } = getCurrentWeekWindowWAT();
+    const { startISO, endISO } = getReportingWindowWAT();
     const notes = await getUnsubmittedNotes(env.DB, startISO, endISO);
 
     if (notes.length === 0) {
       await sendTelegramMessage(
         botToken,
         chatId,
-        '📝 No notes logged for this week yet. Send any update here to record it!'
+        '📝 No notes logged for this bi-weekly period yet. Send any update here to record it!'
       );
     } else {
       const formatted = notes
@@ -105,7 +104,7 @@ export async function handleTelegramWebhook(
       await sendTelegramMessage(
         botToken,
         chatId,
-        `📝 <b>Current Week's Notes (${notes.length}):</b>\n\n${formatted}`,
+        `📝 <b>Current Period Notes (${notes.length}):</b>\n\n${formatted}`,
         'HTML'
       );
     }
@@ -115,10 +114,10 @@ export async function handleTelegramWebhook(
   // Command: /status
   if (text.startsWith('/status')) {
     const nowWAT = formatWATDateTime();
-    const { startISO, endISO } = getCurrentWeekWindowWAT();
+    const { startISO, endISO } = getReportingWindowWAT();
     const notes = await getUnsubmittedNotes(env.DB, startISO, endISO);
 
-    const statusMsg = `ℹ️ <b>DARS Bot Status:</b>\n• Current Time: ${nowWAT}\n• Target Platform: ${env.DARS_BASE_URL}\n• Unsubmitted Notes This Week: ${notes.length}\n• Next Auto-Filing: Every Friday at 4:00 PM WAT\n• Deadline: Friday 6:00 PM WAT (₦1,000 fine for late filing)`;
+    const statusMsg = `ℹ️ <b>DARS Bot Status (Bi-Weekly Mode):</b>\n• Current Time: ${nowWAT}\n• Target Platform: ${env.DARS_BASE_URL}\n• Unsubmitted Notes This Period: ${notes.length}\n• Schedule: 14-day bi-weekly cycle\n• Next Check: Friday at 4:00 PM WAT (Week 1 = Check-in, Week 2 = Auto-Filing)\n• Deadline: Week 2 Friday at 6:00 PM WAT (₦1,000 fine for late filing)`;
     await sendTelegramMessage(botToken, chatId, statusMsg, 'HTML');
     return new Response('OK', { status: 200 });
   }
