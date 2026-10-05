@@ -1,9 +1,10 @@
-import { client, db } from "./index";
+import { getClient, getDb } from "./index";
 import { users, transactionLedger, User } from "./schema";
 import { eq } from "drizzle-orm";
 import { ORIGINS, OriginType } from "../game/constants";
 
 export async function initDatabase() {
+  const client = getClient();
   await client.execute(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -39,19 +40,20 @@ export async function initDatabase() {
 }
 
 export async function getUserById(id: string): Promise<User | null> {
-  await initDatabase();
+  const db = getDb();
   const rows = await db.select().from(users).where(eq(users.id, id)).limit(1);
   return rows[0] || null;
 }
 
 export async function getUserByUsername(username: string): Promise<User | null> {
-  await initDatabase();
+  const db = getDb();
   const rows = await db.select().from(users).where(eq(users.username, username)).limit(1);
   return rows[0] || null;
 }
 
 export async function createUser(username: string, origin: OriginType): Promise<User> {
   await initDatabase();
+  const db = getDb();
   const existing = await getUserByUsername(username);
   if (existing) return existing;
 
@@ -100,7 +102,7 @@ export async function executeTransaction(
   actionType: string,
   metadata?: Record<string, unknown>
 ): Promise<{ newBalance: number }> {
-  await initDatabase();
+  const db = getDb();
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
 
@@ -133,7 +135,7 @@ export async function updateUserVitals(
   userId: string,
   updates: Partial<Pick<User, "energy" | "hunger" | "fun" | "clout" | "careerRank" | "apartmentId" | "carId" | "currentLocation" | "lastShiftAt">>
 ): Promise<User> {
-  await initDatabase();
+  const db = getDb();
   const now = Date.now();
   await db.update(users).set({ ...updates, lastSavedAt: now }).where(eq(users.id, userId));
   const updated = await getUserById(userId);
