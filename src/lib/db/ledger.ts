@@ -3,8 +3,14 @@ import { users, transactionLedger, User } from "./schema";
 import { eq } from "drizzle-orm";
 import { ORIGINS, OriginType } from "../game/constants";
 
+const initializedClients = new WeakSet<object>();
+
 export async function initDatabase() {
   const client = getClient();
+  if (initializedClients.has(client as object)) {
+    return;
+  }
+
   await client.execute(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -37,15 +43,23 @@ export async function initDatabase() {
       created_at INTEGER NOT NULL
     );
   `);
+
+  try {
+    initializedClients.add(client as object);
+  } catch {
+    // Non-object fallback
+  }
 }
 
 export async function getUserById(id: string): Promise<User | null> {
+  await initDatabase();
   const db = getDb();
   const rows = await db.select().from(users).where(eq(users.id, id)).limit(1);
   return rows[0] || null;
 }
 
 export async function getUserByUsername(username: string): Promise<User | null> {
+  await initDatabase();
   const db = getDb();
   const rows = await db.select().from(users).where(eq(users.username, username)).limit(1);
   return rows[0] || null;

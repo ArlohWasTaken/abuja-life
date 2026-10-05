@@ -58,4 +58,20 @@ describe("Full Game Loop Integration", () => {
     expect(afterRent.apartmentId).toBe("gwarinpa_flat");
     expect(afterRent.clout).toBe(35 + 30); // 65
   });
+
+  it("should auto-initialize DB tables on getUserByUsername when table does not exist", async () => {
+    const { resetDbConnection } = await import("../src/lib/db/index");
+    const { getUserByUsername } = await import("../src/lib/db/ledger");
+    const { randomBytes } = await import("crypto");
+    const { join } = await import("path");
+    const { tmpdir } = await import("os");
+
+    // Point to completely empty uninitialized file
+    process.env.DATABASE_URL = `file:${join(tmpdir(), `fresh_${randomBytes(6).toString("hex")}.db`)}`;
+    resetDbConnection();
+
+    // Must not throw "no such table: users"
+    const result = await getUserByUsername("brand_new_wanderer");
+    expect(result).toBeNull();
+  });
 });

@@ -8,7 +8,8 @@ let _db: LibSQLDatabase<typeof schema> | null = null;
 export function getClient(): Client {
   if (!_client) {
     const dbUrl = process.env.DATABASE_URL || "file:abuja_life.db";
-    _client = createClient({ url: dbUrl });
+    const authToken = process.env.TURSO_AUTH_TOKEN;
+    _client = createClient({ url: dbUrl, authToken });
     _db = drizzle(_client, { schema });
   }
   return _client;
